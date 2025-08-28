@@ -1,0 +1,7 @@
+services:
+  quiz:
+    build: .
+    ports:
+      - "8080:80"
+    volumes:
+      - ./questions.json:/usr/share/nginx/html/assets/questions.json:ro
