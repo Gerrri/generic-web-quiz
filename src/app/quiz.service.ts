@@ -3,7 +3,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { Answer, Question, Quiz } from './models';
 
-// Interface für die Auswertung einer Frage
+// Interface for the evaluation of a question
 export interface QuestionEvaluation {
   question: Question;
   selectedAnswers: Answer[];
@@ -14,10 +14,10 @@ export interface QuestionEvaluation {
 @Injectable({ providedIn: 'root' })
 export class QuizService {
   private _quiz = signal<Quiz | null>(null);
-  private _index = signal(0); // 0-basiert
+  private _index = signal(0); // 0-based
   private _answers = signal<Record<string, string[]>>({}); // questionId -> [answerId1, answerId2, ...]
 
-  // abgeleitete Werte
+  // derived values
   quiz = computed(() => this._quiz());
   index = computed(() => this._index());
   current = computed<Question | null>(() => {
@@ -32,7 +32,7 @@ export class QuizService {
     if (!q) return 0;
     return q.questions.reduce((acc, question) => {
       const chosenIds = this._answers()[question.id] || [];
-      // Prüfen, ob alle ausgewählten Antworten korrekt sind und alle korrekten Antworten ausgewählt wurden
+      // Check if all selected answers are correct and all correct answers were selected
       const correctAnswers = question.answers.filter(a => a.correct);
       const chosenAnswers = question.answers.filter(a => chosenIds.includes(a.id));
       
@@ -53,7 +53,7 @@ export class QuizService {
       throw new Error('Keine Fragen gefunden.');
     }
 
-    // Validierung: 2–4 Antworten je Frage und mindestens 1 korrekt
+    // Validation: 2-4 answers per question and at least 1 correct
     data.questions.forEach((q, idx) => {
       const len = q.answers?.length ?? 0;
       if (len < 2 || len > 4) {
@@ -77,7 +77,7 @@ export class QuizService {
     this._answers.update(map => {
       const currentAnswers = map[question.id] || [];
       
-      // Wenn die Antwort bereits ausgewählt ist, entferne sie
+      // If the answer is already selected, remove it
       if (currentAnswers.includes(answer.id)) {
         return {
           ...map,
@@ -85,7 +85,7 @@ export class QuizService {
         };
       }
       
-      // Sonst füge die Antwort hinzu
+      // Otherwise add the answer
       return {
         ...map,
         [question.id]: [...currentAnswers, answer.id]
@@ -110,7 +110,7 @@ export class QuizService {
     this._answers.set({});
   }
 
-  // Methode zur Auswertung aller Fragen
+  // Method for evaluating all questions
   getQuestionEvaluations(): QuestionEvaluation[] {
     const quiz = this._quiz();
     const answers = this._answers();
@@ -122,7 +122,7 @@ export class QuizService {
       const selectedAnswers = question.answers.filter(a => selectedIds.includes(a.id));
       const correctAnswers = question.answers.filter(a => a.correct);
       
-      // Prüfen, ob alle ausgewählten Antworten korrekt sind und alle korrekten Antworten ausgewählt wurden
+      // Check if all selected answers are correct and all correct answers were selected
       const allSelectedAreCorrect = selectedAnswers.every(a => a.correct);
       const allCorrectAreSelected = correctAnswers.every(a => selectedIds.includes(a.id));
       const isCorrect = allSelectedAreCorrect && allCorrectAreSelected;

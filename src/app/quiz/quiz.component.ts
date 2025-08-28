@@ -81,7 +81,7 @@ export class QuizComponent {
     if (!this.question() || this.isConfirmed()) return;
     this.quiz.chooseAnswer(a);
     
-    // Aktualisiere die lokale Auswahl
+    // Update the local selection
     const currentIds = this.selectedIds();
     if (currentIds.includes(a.id)) {
       this.selectedIds.set(currentIds.filter(id => id !== a.id));
@@ -110,7 +110,7 @@ export class QuizComponent {
     const q = this.question();
     if (!q) return false;
     
-    // Prüfen, ob alle ausgewählten Antworten korrekt sind und alle korrekten Antworten ausgewählt wurden
+    // Check if all selected answers are correct and all correct answers were selected
     const correctAnswers = q.answers.filter(a => a.correct);
     const selectedAnswers = q.answers.filter(a => this.selectedIds().includes(a.id));
     
