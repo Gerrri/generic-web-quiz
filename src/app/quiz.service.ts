@@ -3,11 +3,19 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { Answer, Question, Quiz } from './models';
 
+// Interface für die Auswertung einer Frage
+export interface QuestionEvaluation {
+  question: Question;
+  selectedAnswers: Answer[];
+  isCorrect: boolean;
+  correctAnswers: Answer[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class QuizService {
   private _quiz = signal<Quiz | null>(null);
   private _index = signal(0); // 0-basiert
-  private _answers = signal<Record<string, string>>({}); // questionId -> answerId
+  private _answers = signal<Record<string, string[]>>({}); // questionId -> [answerId1, answerId2, ...]
 
   // abgeleitete Werte
   quiz = computed(() => this._quiz());
@@ -23,9 +31,15 @@ export class QuizService {
     const q = this._quiz();
     if (!q) return 0;
     return q.questions.reduce((acc, question) => {
-      const chosen = this._answers()[question.id];
-      const chosenAnswer = question.answers.find(a => a.id === chosen);
-      return acc + (chosenAnswer?.correct ? 1 : 0);
+      const chosenIds = this._answers()[question.id] || [];
+      // Prüfen, ob alle ausgewählten Antworten korrekt sind und alle korrekten Antworten ausgewählt wurden
+      const correctAnswers = question.answers.filter(a => a.correct);
+      const chosenAnswers = question.answers.filter(a => chosenIds.includes(a.id));
+      
+      const allChosenAreCorrect = chosenAnswers.every(a => a.correct);
+      const allCorrectAreChosen = correctAnswers.every(a => chosenIds.includes(a.id));
+      
+      return acc + (allChosenAreCorrect && allCorrectAreChosen ? 1 : 0);
     }, 0);
   });
 
@@ -39,15 +53,15 @@ export class QuizService {
       throw new Error('Keine Fragen gefunden.');
     }
 
-    // Validierung: 2–4 Antworten je Frage und genau 1 korrekt
+    // Validierung: 2–4 Antworten je Frage und mindestens 1 korrekt
     data.questions.forEach((q, idx) => {
       const len = q.answers?.length ?? 0;
       if (len < 2 || len > 4) {
         throw new Error(`Frage #${idx + 1} hat ${len} Antworten (erlaubt 2–4).`);
       }
       const corrects = q.answers.filter(a => a.correct).length;
-      if (corrects !== 1) {
-        throw new Error(`Frage #${idx + 1} muss genau 1 korrekte Antwort haben (aktuell ${corrects}).`);
+      if (corrects < 1) {
+        throw new Error(`Frage #${idx + 1} muss mindestens 1 korrekte Antwort haben (aktuell ${corrects}).`);
       }
     });
 
@@ -59,7 +73,24 @@ export class QuizService {
   chooseAnswer(answer: Answer): void {
     const question = this.current();
     if (!question) return;
-    this._answers.update(map => ({ ...map, [question.id]: answer.id }));
+    
+    this._answers.update(map => {
+      const currentAnswers = map[question.id] || [];
+      
+      // Wenn die Antwort bereits ausgewählt ist, entferne sie
+      if (currentAnswers.includes(answer.id)) {
+        return {
+          ...map,
+          [question.id]: currentAnswers.filter(id => id !== answer.id)
+        };
+      }
+      
+      // Sonst füge die Antwort hinzu
+      return {
+        ...map,
+        [question.id]: [...currentAnswers, answer.id]
+      };
+    });
   }
 
   next(): void {
@@ -77,5 +108,31 @@ export class QuizService {
   restart(): void {
     this._index.set(0);
     this._answers.set({});
+  }
+
+  // Methode zur Auswertung aller Fragen
+  getQuestionEvaluations(): QuestionEvaluation[] {
+    const quiz = this._quiz();
+    const answers = this._answers();
+    
+    if (!quiz) return [];
+    
+    return quiz.questions.map(question => {
+      const selectedIds = answers[question.id] || [];
+      const selectedAnswers = question.answers.filter(a => selectedIds.includes(a.id));
+      const correctAnswers = question.answers.filter(a => a.correct);
+      
+      // Prüfen, ob alle ausgewählten Antworten korrekt sind und alle korrekten Antworten ausgewählt wurden
+      const allSelectedAreCorrect = selectedAnswers.every(a => a.correct);
+      const allCorrectAreSelected = correctAnswers.every(a => selectedIds.includes(a.id));
+      const isCorrect = allSelectedAreCorrect && allCorrectAreSelected;
+      
+      return {
+        question,
+        selectedAnswers,
+        isCorrect,
+        correctAnswers
+      };
+    });
   }
 }

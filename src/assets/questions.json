@@ -27,6 +27,16 @@
         { "id": "c", "text": "21", "correct": false },
         { "id": "d", "text": "27", "correct": false }
       ]
+    },
+    {
+      "id": "q4",
+      "text": "Welche der folgenden Tiere sind Säugetiere? (Mehrere Antworten möglich)",
+      "answers": [
+        { "id": "a", "text": "Delfin", "correct": true },
+        { "id": "b", "text": "Krokodil", "correct": false },
+        { "id": "c", "text": "Fledermaus", "correct": true },
+        { "id": "d", "text": "Pinguin", "correct": false }
+      ]
     }
   ]
 }
